@@ -1,19 +1,8 @@
 var Amadeus = require("amadeus");
 var moment = require("moment");
-const { parse, toSeconds } = require("iso8601-duration");
 const airlineCodes = require("../airline-codes.json");
 
 module.exports.flightSearch = (req, res) => {
-  let currency = req.body.currency;
-  let departure = req.body.departure;
-  let departureDate = req.body.departureDate;
-  let arrival = req.body.arrival;
-  let returnDate = req.body.returnDate;
-  let adults = req.body.adults;
-  let children = req.body.children;
-  let infants = req.body.infants;
-  let travelClass =
-    req.body.travelClass == null ? "ECONOMY" : req.body.travelClass;
   var amadeus = new Amadeus({
     clientId: process.env.AMADEUS_API_KEY,
     clientSecret: process.env.AMADEUS_API_SECRET,
@@ -21,18 +10,21 @@ module.exports.flightSearch = (req, res) => {
   let flightDetails = [];
   let flightData = [];
   let commonObj = {
-    currencyCode: currency,
-    originLocationCode: departure,
-    destinationLocationCode: arrival,
-    departureDate: departureDate,
-    adults: adults,
-    children: children,
-    infants: infants,
-    travelClass: travelClass,
+    currencyCode: req.body.currencyCode,
+    originLocationCode: req.body.originLocationCode,
+    destinationLocationCode: req.body.destinationLocationCode,
+    departureDate: req.body.departureDate,
+    adults: req.body.adults,
+    children: req.body.children,
+    infants: req.body.infants,
   };
   let queryObj = commonObj;
-  if (returnDate != null || returnDate != "")
-    queryObj = { ...commonObj, returnDate: returnDate };
+  if (req.body.returnDate != null && req.body.returnDate != "")
+    queryObj = { ...commonObj, returnDate: req.body.returnDate };
+  if (req.body.travelClass != null && req.body.travelClass != "")
+    queryObj = { ...commonObj, travelClass: req.body.travelClass };
+  console.log("body", req.body);
+  console.log("query_obj", queryObj);
   amadeus.shopping.flightOffersSearch
     .get(queryObj)
     .then((response) => {
@@ -65,6 +57,7 @@ module.exports.flightSearch = (req, res) => {
     })
     .catch((responseError) => {
       console.log("error", responseError);
+      return res.status(400).json({ error: responseError });
     });
   function toHoursAndMinutes(dept, arrival) {
     var diff_s = moment(arrival).diff(moment(dept), "seconds");
